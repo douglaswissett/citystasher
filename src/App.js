@@ -2,18 +2,20 @@ import React, { Component } from 'react';
 import './App.css';
 import MapWithAMarker from './MapWithAMarker';
 
+let url = 'https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints';
+
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       data: [],
-      api_data: [],
-      data_sorted: [],
+      params: '',
       center: {lat: 0, lng: 0},
       loadData: false,
       loadMap: false,
       loading: true,
-      nearby_filter: ''
+      nearby_filter: '',
+      error: false
     }
   }
 
@@ -29,35 +31,62 @@ class App extends Component {
           },
           loadMap: true
         });
-        this.fetchApiData(position);
+
+        // fetch init api data
+        this.handleFetch(url);
+
+      }, (error) => { 
+        if (error.code === error.PERMISSION_DENIED) {
+          this.setState({
+            error: true,
+            loading: false
+          });
+        }
       });
     } else {
       console.log("Geolocation is not supported by this browser.");
     }
   }
 
-  fetchApiData(position) {
-
-    // fetch data
-    fetch('https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints')
+  handleFetch(url) {
+    fetch(url)
     .then(response => response.json())
     .then((data) => {
       this.setState({
         data: data,
-        api_data: data
-      });
-
-      // fetch sorted data
-      fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${position.coords.latitude}&centre_lon=${position.coords.longitude}&by_distance=true`)
-      .then(response => response.json())
-      .then((data) => {
-        this.setState({
-          data_sorted: data,
-          loadData: true,
-          loading: false
-        });
+        loadData: true,
+        loading: false
       });
     });
+  }
+
+  updateQueryStringParameter(uri, key, value) {
+    var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+    var separator = uri.indexOf('?') !== -1 ? "&" : "?";
+    if (uri.match(re)) {
+      return uri.replace(re, '$1' + key + "=" + value + '$2');
+    }
+    else {
+      return uri + separator + key + "=" + value;
+    }
+  }
+
+  removeQueryStringParameter(sourceURL, key) {
+    var rtn = sourceURL.split("?")[0],
+      param,
+      params_arr = [],
+      queryString = (sourceURL.indexOf("?") !== -1) ? sourceURL.split("?")[1] : "";
+    if (queryString !== "") {
+      params_arr = queryString.split("&");
+      for (var i = params_arr.length - 1; i >= 0; i -= 1) {
+        param = params_arr[i].split("=")[0];
+        if (param === key) {
+          params_arr.splice(i, 1);
+        }
+      }
+      rtn = rtn + "?" + params_arr.join("&");
+    }
+    return rtn;
   }
 
   handleFilterByRadius() {
@@ -65,87 +94,27 @@ class App extends Component {
 
     this.setState({loading: true});
 
-    if (this.refs.check_box.checked) {
-      if (nearby_filter) {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}&nearby_radius=${nearby_filter}&by_distance=true`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      } else {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}&by_distance=true`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      }
-    } else {
-      if (nearby_filter) {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}&nearby_radius=${nearby_filter}`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      } else {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      }
-    }
+    url = this.updateQueryStringParameter(url, 'centre_lat', center.lat)
+    url = this.updateQueryStringParameter(url, 'centre_lon', center.lng);
+    url = this.updateQueryStringParameter(url, 'nearby_radius', nearby_filter);
+
+    this.handleFetch(url);
   }
 
   handleSortByDistance(e) {
-    const { nearby_filter, center, data_sorted, api_data } = this.state;
+    const { center } = this.state;
 
     this.setState({loading: true});
 
-    if (nearby_filter.length > 0) {
-      if (e.target.checked) {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}&nearby_radius=${nearby_filter}&by_distance=true`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      } else {
-        fetch(`https://nameless-castle-51857.herokuapp.com/api/v1/stashpoints?centre_lat=${center.lat}&centre_lon=${center.lng}&nearby_radius=${nearby_filter}`)
-        .then(response => response.json())
-        .then((data) => {
-          this.setState({
-            data: data,
-            loading: false
-          });
-        });
-      }
+    if (e.target.checked) {
+      url = this.updateQueryStringParameter(url, 'centre_lat', center.lat)
+      url = this.updateQueryStringParameter(url, 'centre_lon', center.lng);
+      url = this.updateQueryStringParameter(url, 'by_distance', true);
     } else {
-      if (e.target.checked) {
-        this.setState({
-          data: data_sorted,
-          loading: false
-        });
-      } else {
-        this.setState({
-          data: api_data,
-          loading: false
-        });
-      }
+      url = this.removeQueryStringParameter(url, 'by_distance');
     }
+
+    this.handleFetch(url);
   }
 
   updateInputValue(e) {
@@ -155,12 +124,13 @@ class App extends Component {
   }
 
   render() {
-    const { center, data, loadData, loadMap, loading } = this.state;
+    const { center, data, loadData, loadMap, loading, error } = this.state;
 
     return (
       <div className="app">
 
         { loading ? (<div className="loader" />) : (null)}
+        { error ? (<p>Please allow location mode to use this service.</p>) : (null)}
 
         <div className="map-container">
           { loadData && loadMap ? (
@@ -180,7 +150,7 @@ class App extends Component {
           <p>Filter and sort by:</p>
           <input type="text" placeholder="radius in km" onChange={this.updateInputValue.bind(this)} />
           <button onClick={this.handleFilterByRadius.bind(this)}>Submit</button>
-          <label for="sort_dist">Sort distance</label>
+          <label htmlFor="sort_dist">Sort distance</label>
           <input ref="check_box" type="checkbox" id="sort_dist" onChange={this.handleSortByDistance.bind(this)} />
           <h1>Stashpoints</h1>
           <div className="stashpoints-container">

@@ -1,5 +1,5 @@
 /* Google Map Custom Component */
-import React, { Component } from 'react';
+import React from 'react';
 import {
   withScriptjs,
   withGoogleMap,

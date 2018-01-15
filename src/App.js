@@ -94,9 +94,15 @@ class App extends Component {
 
     this.setState({loading: true});
 
-    url = this.updateQueryStringParameter(url, 'centre_lat', center.lat)
-    url = this.updateQueryStringParameter(url, 'centre_lon', center.lng);
-    url = this.updateQueryStringParameter(url, 'nearby_radius', nearby_filter);
+    if (nearby_filter.length > 0) {
+      url = this.updateQueryStringParameter(url, 'centre_lat', center.lat)
+      url = this.updateQueryStringParameter(url, 'centre_lon', center.lng);
+      url = this.updateQueryStringParameter(url, 'nearby_radius', nearby_filter);
+    } else {
+      url = this.removeQueryStringParameter(url, 'centre_lat');
+      url = this.removeQueryStringParameter(url, 'centre_lon');
+      url = this.removeQueryStringParameter(url, 'nearby_radius');
+    }
 
     this.handleFetch(url);
   }

@@ -166,7 +166,7 @@ class App extends Component {
         <div className="map-container">
           { loadData && loadMap ? (
             <MapWithAMarker
-              googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4R6AN7SmujjPUIGKdyao2Kqitzr1kiRg&v=3.exp&libraries=geometry,drawing,places"
+              googleMapURL="https://maps.googleapis.com/maps/api/js?key=AIzaSyBRQJfPMLOKMiegBvbLsBlgKqIA8J_pinA&v=3.exp&libraries=geometry,drawing,places"
               center={center}
               data={data}
               loadingElement={<div style={{ height: `70vh` }} />}
